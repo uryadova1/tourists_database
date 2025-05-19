@@ -608,7 +608,7 @@ def apply_filters(table):
                     params.append(num_value)
             except ValueError:
                 continue
-        else:  # text, select
+        else:
             if filter_type == 'eq':
                 filters.append(f"{field_name} = %s")
                 params.append(filter_value)
@@ -654,7 +654,6 @@ def get_russian_table_name(english_name):
 def check_access(table, action):
     user_role = session.get('user', {}).get('role')
 
-    # Гости могут только просматривать
     if user_role == 'guest' and action != 'view':
         abort(403)
 
@@ -664,7 +663,6 @@ def check_access(table, action):
             "Attendance", "Trainings", "Groups_"
         ]
 
-        # Проверяем как русские, так и английские названия таблиц
         english_name = TABLE_NAME_MAPPING.get(table, table)
         if table not in allowed_tables and english_name not in allowed_tables:
             abort(403)
@@ -810,13 +808,10 @@ def has_permission(table_name, action):
 def delete_entry(table, row_id):
     check_access(table, 'delete')
     try:
-        # 1. Находим метаданные таблицы
         meta = None
-        # Ищем по русскому названию
         if table in TABLES_META:
             meta = TABLES_META[table]
         else:
-            # Ищем по английскому названию
             for t_meta in TABLES_META.values():
                 if t_meta.get("table_name", "").lower() == table.lower():
                     meta = t_meta
