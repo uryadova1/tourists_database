@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Фильтрация данных</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- Подключаем jQuery UI для календаря -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+     <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f9fc;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            font-family: 'Montserrat', sans-serif;
+            color: #2c3e50;
+        }
+
+        h1 {
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #d6e0e9;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f7fb;
+        }
+
+        tr:hover {
+            background-color: #e1f0fa;
+        }
+
+        .logout {
+            float: right;
+            background: #2c3e50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .logout a {
+            color: #3498db;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+
+        .logout a:hover {
+            text-decoration: underline;
+        }
+
+        form {
+            margin: 15px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid #d6e0e9;
+            border-radius: 4px;
+            font-family: 'Roboto', sans-serif;
+            width: 300px;
+            max-width: 100%;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9em;
+            margin-right: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .action-buttons {
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            background-color: #2c3e50;
+        }
+
+        .action-buttons button:hover {
+            background-color: #1a252f;
+        }
+
+        .no-data {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .form-row {
+            margin-bottom: 15px;
+        }
+
+        .form-actions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="filter-container">
+        <h1>Фильтрация данных: {{ table }}</h1>
+
+        <form method="post" action="{{ url_for('apply_filters', table=table) }}" id="filter-form">
+            {% for field in filter_fields %}
+            <div class="filter-group">
+                <h3>{{ field.label }}</h3>
+                <div class="filter-row">
+                    <label>Условие:</label>
+                    <select name="filter_type_{{ field.name }}" class="filter-type">
+                        <option value="eq">Равно</option>
+                        <option value="gt">Больше</option>
+                        <option value="lt">Меньше</option>
+                        {% if field.type != 'select' %}
+                        <option value="like">Содержит</option>
+                        {% endif %}
+                    </select>
+
+                    {% if field.type == 'select' %}
+                        <select name="filter_value_{{ field.name }}" class="filter-value">
+                            {% for option in field.options %}
+                            <option value="{{ option }}">{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    {% elif field.type == 'date' %}
+                        <input type="text" name="filter_value_{{ field.name }}" class="filter-value datepicker" placeholder="Выберите дату">
+                    {% else %}
+                        <input type="{{ field.type }}" name="filter_value_{{ field.name }}" class="filter-value" placeholder="Введите значение">
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="filter-actions">
+                <button type="submit">Применить фильтры</button>
+                <a href="{{ url_for('index') }}" style="margin-left: 20px;">Отмена</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Подключаем jQuery и jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <!-- Подключаем Select2 для красивых выпадающих списков -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(function() {
+            // Инициализация календаря для полей даты
+            $(".datepicker").datepicker({
+                dateFormat: "yy-mm-dd",
+                changeMonth: true,
+                changeYear: true,
+                yearRange: "1900:2030"
+            });
+
+            // Инициализация Select2 для выпадающих списков
+            $('select.filter-value').select2({
+                width: '100%',
+                minimumResultsForSearch: 10
+            });
+
+            // Динамическое обновление типа поля при изменении условия
+            $('.filter-type').change(function() {
+                const row = $(this).closest('.filter-row');
+                const valueField = row.find('.filter-value');
+
+                if ($(this).val() === 'like') {
+                    valueField.attr('type', 'text');
+                } else {
+                    const fieldType = valueField.attr('data-original-type') || valueField.attr('type');
+                    valueField.attr('type', fieldType);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
