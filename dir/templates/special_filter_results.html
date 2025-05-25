@@ -2,8 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Туристическая база</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <title>Результаты фильтрации</title>
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -142,82 +141,35 @@
     </style>
 </head>
 <body>
-    <h1>Добро пожаловать в туристическую базу</h1>
+    <h1>Результаты: {{ query_name }}</h1>
 
-    {% if session.get('user') %}
-    <div class="logout">
-        Вы вошли как <strong>{{ session['user']['role'] }}</strong>
-        <a href="{{ url_for('logout') }}">[Выйти]</a>
-    </div>
+    {% if total is not none %}
+    <div class="total-count">Общее количество: {{ total }}</div>
     {% endif %}
 
-
-    <form method="post">
-        <label for="table">Выберите таблицу:</label>
-        <select name="table" id="table">
-            {% for table in tables %}
-            <option value="{{ table }}" {% if table==selected_table %}selected{% endif %}>{{ table }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Показать</button>
-    </form>
-
-    {% if selected_table %}
-    <h2>Таблица: {{ selected_table }}</h2>
-<div class="action-buttons">
-    <form method="get" action="/add/{{ selected_table }}" style="display:inline">
-        <button type="submit">Добавить новую запись</button>
-    </form>
-    <a href="{{ url_for('show_filters', table=selected_table) }}" style="margin-left: 10px;">
-        <button type="button">Фильтровать данные</button>
-    </a>
-    <a href="{{ url_for('special_filters') }}" style="display: block; margin: 20px 0;">
-        <button>Специальные фильтры</button>
-    </a>
-</div>
     {% if rows %}
     <table>
         <thead>
-        <tr>
-            {% for header in headers %}
-            <th>{{ header }}</th>
-            {% endfor %}
-            {% if session.get('user') and session['user']['role'] in ['employee', 'admin'] %}
-            <th>Действия</th>
-            {% endif %}
-        </tr>
+            <tr>
+                {% for header in headers %}
+                <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
         </thead>
         <tbody>
-        {% for row in rows %}
-        <tr>
-            {% for cell in row %}
-            <td>{{ cell }}</td>
+            {% for row in rows %}
+            <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
             {% endfor %}
-            {% if session.get('user') and session['user']['role'] in ['employee', 'admin'] %}
-            <td>
-                <form method="get" action="{{ url_for('edit_entry', table=selected_table, record_id=row[0]) }}" style="display:inline">
-                    <button type="submit">Редактировать</button>
-                </form>
-                <form method="post" action="{{ url_for('delete_entry', table=selected_table, row_id=row[0]) }}" style="display:inline">
-                    <button type="submit" onclick="return confirm('Удалить запись?');">Удалить</button>
-                </form>
-            </td>
-            {% endif %}
-        </tr>
-        {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p class="no-data">Нет данных для отображения.</p>
+    <p>Нет данных, соответствующих выбранным фильтрам.</p>
     {% endif %}
 
-    {% if session.get('user') and session['user']['role'] in ['employee', 'admin'] %}
-    <div class="action-buttons">
-        <form method="get" action="/add/{{ selected_table }}" style="display:inline">
-            <button type="submit">Добавить новую запись</button>
-        </form>
-    </div>
-    {% endif %}
-    {% endif %}
+    <a href="{{ url_for('special_filters') }}" class="back-link">Вернуться к фильтрам</a>
 </body>
 </html>
