@@ -84,7 +84,18 @@ def apply_special_filter(query_key):
 
     for field in query_data['fields']:
         value = request.form.get(field['name'])
+        if value == '':
+            value = None  # ← добавь это!
         if value:
+            if field['name'] == 'skills_keywords':  # ключевое поле
+                filters[field['name']] = f"%{value}%"
+            elif field['type'] == 'number':
+                try:
+                    filters[field['name']] = float(value)
+                except ValueError:
+                    pass
+            else:
+                filters[field['name']] = value
             if field['type'] == 'number':
                 try:
                     filters[field['name']] = float(value)

@@ -103,7 +103,7 @@ SPECIAL_FILTER = {
                     }
                 ],
                 "query": """
-                SELECT 
+                SELECT DISTINCT
                     tr.id AS trainer_id,
                     CONCAT(t.surname, ' ', t.name_, ' ', t.patronymic) AS full_name,
                     t.gender,
@@ -200,22 +200,22 @@ SPECIAL_FILTER = {
                 ],
                 "query": """
                 SELECT 
-                    t.id,
-                    CONCAT(t.surname, ' ', t.name_) AS full_name,
-                    s.name_ AS section_name,
-                    COUNT(DISTINCT train.id) AS training_count,
-                    ROUND(SUM(EXTRACT(EPOCH FROM (train.end_time - train.start_time)) / 3600, 2) AS total_hours
-                FROM Trainers tr
-                JOIN Tourists t ON t.id = tr.tourist_id
-                JOIN Trainings train ON train.trainer_id = tr.id
-                JOIN Attendance a ON a.training_id = train.id
-                JOIN Groups_ g ON g.id = train.group_id
-                JOIN Sections s ON s.id = g.section_id
-                WHERE
-                    CONCAT(t.surname, ' ', t.name_) = %(trainer_name)s AND
-                    a.date_ BETWEEN %(date_from)s AND %(date_to)s
-                GROUP BY t.id, full_name, s.name_
-                ORDER BY total_hours DESC
+                t.id,
+                CONCAT(t.surname, ' ', t.name_) AS full_name,
+                s.name_ AS section_name,
+                COUNT(DISTINCT train.id) AS training_count,
+                SUM(ROUND(EXTRACT(EPOCH FROM (train.end_time - train.start_time)) / 3600.0, 2)) AS total_hours
+            FROM Trainers tr
+            JOIN Tourists t ON t.id = tr.tourist_id
+            JOIN Trainings train ON train.trainer_id = tr.id
+            JOIN Attendance a ON a.training_id = train.id
+            JOIN Groups_ g ON g.id = train.group_id
+            JOIN Sections s ON s.id = g.section_id
+            WHERE
+                (%(trainer_name)s IS NULL OR CONCAT(t.surname, ' ', t.name_) = %(trainer_name)s) AND
+                a.date_ BETWEEN %(date_from)s AND %(date_to)s
+            GROUP BY t.id, full_name, s.name_
+            ORDER BY total_hours DESC
             """
             },
 
@@ -474,7 +474,9 @@ SPECIAL_FILTER = {
                 WHERE
                     s.name_ = %(section_name)s AND
                     g.name_ = %(group_name)s AND
-                    (%(skills_keywords)s IS NULL OR LOWER(t.skills) LIKE '%%' || LOWER(%(skills_keywords)s) || '%%')
+                    (
+                    %(skills_keywords)s IS NULL  OR LOWER(COALESCE(t.skills, '')) LIKE '%%' || LOWER(%(skills_keywords)s) || '%%'
+                )
                 ORDER BY t.surname, t.name_
             """
             },
